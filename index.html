@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Decreto 67 - Historial y Edición</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Animaciones */
+        @media screen {
+            .fade-in { animation: fadeIn 0.3s ease-in-out; }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        }
+
+        /* TIPOGRAFÍA GLOBAL EN PANTALLA Y PAPEL */
+        body, input, textarea, select, button {
+            font-family: Arial, Helvetica, sans-serif !important;
+        }
+
+        /* Estilos de Formulario en Pantalla */
+        input.editable, textarea.editable, select.editable, div.editable-div {
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            width: 100%;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        input.editable:focus, textarea.editable:focus, select.editable:focus, div.editable-div:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Inputs transparentes */
+        input.transparent-input {
+            background: transparent;
+            border: 1px dashed transparent;
+            width: auto;
+            min-width: 50px;
+            text-align: center;
+        }
+        input.transparent-input:hover { border-color: #cbd5e1; }
+        input.transparent-input:focus { border-color: #3b82f6; background: white; }
+
+        /* Botones sugerencias */
+        .suggestion-btn { text-align: left; transition: all 0.2s; }
+        .suggestion-btn:hover { transform: translateX(2px); }
+
+        /* Logo Placeholder */
+        .logo-placeholder {
+            border: 2px dashed #9ca3af;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .logo-placeholder:hover { border-color: #60a5fa; background-color: rgba(255,255,255,0.1); }
+
+        /* --- REGLAS DE IMPRESIÓN CONTINUA --- */
+        @media print {
+            .no-print, header, nav, #action-buttons, .suggestion-btn-container, .logo-upload-hint { 
+                display: none !important; 
+            }
+            
+            body { 
+                background-color: white; 
+                color: black; 
+                font-size: 11pt !important; /* TAMAÑO 11 SOLICITADO */
+                line-height: 1.2;
+            }
+            .container { 
+                max-width: 100% !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+                width: 100% !important;
+            }
+
+            /* Control de visibilidad selectiva */
+            body.printing-repitencia #view-ficha,
+            body.printing-repitencia #view-analisis,
+            body.printing-repitencia #view-decision,
+            body.printing-repitencia #print-header-general {
+                display: block !important;
+            }
+            body.printing-repitencia #view-tutoria, 
+            body.printing-repitencia #view-historial {
+                display: none !important;
+            }
+
+            body.printing-tutoria #view-tutoria {
+                display: block !important;
+                margin-top: 0 !important;
+            }
+            body.printing-tutoria #view-ficha,
+            body.printing-tutoria #view-analisis,
+            body.printing-tutoria #view-decision,
+            body.printing-tutoria #print-header-general,
+            body.printing-tutoria #view-historial {
+                display: none !important;
+            }
+
+            /* Flujo continuo de secciones */
+            .view-section {
+                margin-bottom: 10px; /* Reducido para evitar huecos */
+                display: block;
+                width: 100%;
+                break-inside: auto; /* Permitir salto si es necesario para continuidad */
+            }
+
+            /* Transformación de inputs a texto plano */
+            input.editable, textarea.editable, select.editable, div.editable-div {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                resize: none;
+                box-shadow: none !important;
+                overflow: visible;
+                font-weight: 500;
+                display: block;
+                height: auto !important;
+                min-height: 0 !important;
+                white-space: pre-wrap; /* Respetar saltos de línea */
+            }
+            
+            /* Ajustes de página */
+            @page { margin: 1.5cm; size: letter; }
+            
+            /* Header */
+            .print-header-flex {
+                display: flex !important;
+                align-items: center;
+                justify-content: space-between;
+                gap: 15px;
+                margin-bottom: 1rem;
+                border-bottom: 2px solid #000;
+                padding-bottom: 10px;
+            }
+            .print-logo { width: 90px; height: 90px; object-fit: contain; }
+            
+            /* Eliminar estilos de tarjeta para ahorrar tinta y espacio */
+            .bg-white, .rounded-lg, .shadow-sm, .border {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+            }
+            
+            /* Bordes necesarios */
+            .border-b { border-bottom: 1px solid #ccc !important; margin-bottom: 5px !important; }
+            .border-l-4 { 
+                border-left: 3px solid #000 !important; 
+                padding-left: 10px !important; 
+                margin-left: 0 !important;
+            }
+            
+            /* Título editable que se ajuste */
+            .editable-title {
+                font-size: 16pt !important;
+                line-height: 1.2 !important;
+                text-transform: uppercase;
+                font-weight: bold;
+                text-align: center;
+            }
+
+            /* Tabla de promedios vertical para impresión */
+            .vertical-grades-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 1rem;
+            }
+            .vertical-grades-table th, .vertical-grades-table td {
+                border: 1px solid #000;
+                padding: 4px 8px;
+                text-align: center;
+                font-size: 11pt;
+            }
+            .vertical-grades-table th {
+                background-color: #f0f0f0 !important;
+                font-weight: bold;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+
+        @media screen {
+            .view-section.hidden-tab { display: none; }
+            #print-header-general { display: block; margin-bottom: 20px; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 min-h-screen pb-12">
+
+    <!-- Input Oculto para Cargar Logo -->
+    <input type="file" id="logo-uploader" accept="image/*" class="hidden" onchange="window.loadLogo(event)">
+
+    <!-- Header App -->
+    <header class="bg-blue-900 text-white shadow-lg no-print">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="relative group cursor-pointer" onclick="document.getElementById('logo-uploader').click()">
+                    <div id="screen-logo-container" class="w-16 h-16 bg-blue-800 rounded-lg logo-placeholder flex flex-col items-center justify-center text-blue-300 overflow-hidden">
+                        <i class="fa-solid fa-image text-xl mb-1"></i>
+                        <span class="text-[8px] text-center px-1">Subir Logo</span>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold leading-tight">GESTOR DECRETO 67</h1>
+                    <p class="text-blue-200 text-xs">Evaluación y Promoción Escolar</p>
+                    <p class="text-green-300 text-[10px] mt-0.5 font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-link"></i> Conectado
+                    </p>
+                    <p class="text-blue-300 text-[10px] mt-0.5 italic opacity-80">desarrollado por ProfeAle</p>
+                </div>
+            </div>
+            <div class="text-right hidden md:block">
+                <p class="font-medium text-sm header-student-name">Estudiante</p>
+                <p class="text-blue-300 text-xs header-student-run">RUT</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navegación -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-10 no-print shadow-sm">
+        <div class="container mx-auto px-6 overflow-x-auto">
+            <div class="flex space-x-6" id="nav-tabs">
+                <button onclick="window.switchTab('ficha')" id="tab-ficha" class="flex items-center gap-2 py-4 text-sm font-medium border-b-2 border-blue-600 text-blue-600 transition-colors whitespace-nowrap">
+                    <i class="fa-solid fa-user-pen"></i> 1. Ficha
+                </button>
+                <button onclick="window.switchTab('analisis')" id="tab-analisis" class="flex items-center gap-2 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors whitespace-nowrap">
+                    <i class="fa-solid fa-chart-line"></i> 2. Análisis
+                </button>
+                <button onclick="window.switchTab('decision')" id="tab-decision" class="flex items-center gap-2 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors whitespace-nowrap">
+                    <i class="fa-solid fa-file-signature"></i> 3. Resolución
+                </button>
+                <button onclick="window.switchTab('tutoria')" id="tab-tutoria" class="flex items-center gap-2 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors whitespace-nowrap">
+                    <i class="fa-solid fa-chalkboard-user"></i> 4. Anexo Tutoría
+                </button>
+                <button onclick="window.switchTab('historial')" id="tab-historial" class="flex items-center gap-2 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors whitespace-nowrap ml-auto bg-slate-50 px-4 rounded-t-lg">
+                    <i class="fa-solid fa-clock-rotate-left"></i> 5. Historial
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="container mx-auto px-4 md:px-6 py-8 max-w-5xl">
+        
+        <!-- ENCABEZADO DOCUMENTO -->
+        <div id="print-header-general" class="hidden-tab-tutoria hidden-tab-historial">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-6 print:mb-2">
+                <div class="print-header-flex flex flex-col md:flex-row items-center justify-between gap-4 border-b-2 border-slate-800 pb-4">
+                    <!-- Logo -->
+                    <div class="w-24 h-24 flex-shrink-0 flex items-center justify-center">
+                        <img id="print-logo-repitencia" src="" class="print-logo w-full h-full object-contain hidden" alt="Logo">
+                        <div id="placeholder-logo-rep" class="text-xs text-slate-400 text-center border-2 border-dashed border-slate-200 p-2 rounded no-print cursor-pointer" onclick="document.getElementById('logo-uploader').click()">
+                            (Clic Logo)
+                        </div>
+                    </div>
+                    
+                    <!-- Título -->
+                    <div class="text-center flex-1 w-full">
+                        <div contenteditable="true" 
+                             class="editable-title text-2xl font-bold text-slate-900 text-center w-full uppercase outline-none focus:bg-blue-50 rounded p-1"
+                             oninput="window.updateData('reportInfo.title', this.innerText)">INFORME DE REPITENCIA ESCOLAR</div>
+                        <p class="text-sm text-slate-500 mt-1">Según Decreto de Evaluación y Promoción Nº 67/2018</p>
+                    </div>
+
+                    <!-- Datos Admin -->
+                    <div class="text-right text-sm min-w-[150px]">
+                        <div class="flex items-center justify-end gap-2 mb-1">
+                            <span class="font-bold text-slate-700">Nº:</span>
+                            <input type="text" class="font-bold text-red-600 text-right transparent-input w-24" 
+                                   value="001-2025" 
+                                   oninput="window.updateData('reportInfo.number', this.value)">
+                        </div>
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="font-bold text-slate-700">Fecha:</span>
+                            <!-- Input Tipo Fecha Calendario -->
+                            <input type="date" class="text-slate-900 text-right transparent-input w-32" 
+                                   value="2025-12-05"
+                                   oninput="window.updateData('reportInfo.date', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTAS -->
+        <div id="view-ficha" class="view-section"></div>
+        <div id="view-analisis" class="view-section hidden-tab mt-6"></div>
+        <div id="view-decision" class="view-section hidden-tab mt-6"></div>
+        <div id="view-tutoria" class="view-section hidden-tab mt-6"></div>
+        
+        <!-- VISTA HISTORIAL -->
+        <div id="view-historial" class="view-section hidden-tab mt-6 no-print">
+            <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-list-check"></i> Informes Emitidos</h2>
+                    <button onclick="window.loadHistoryFromDB()" class="text-sm text-blue-600 hover:text-blue-800"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-50 border-b">
+                            <tr><th class="px-4 py-3">Fecha</th><th class="px-4 py-3">Estudiante</th><th class="px-4 py-3">RUT</th><th class="px-4 py-3">Decisión</th><th class="px-4 py-3 text-right">Acciones</th></tr>
+                        </thead>
+                        <tbody id="historial-list-body">
+                            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Cargando historial...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div id="action-buttons" class="flex justify-end gap-4 mt-8 no-print pb-12 flex-wrap">
+            <button onclick="window.saveData()" class="flex items-center gap-2 px-4 py-2 border border-green-600 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 font-medium transition-colors">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Guardar Informe
+            </button>
+            <button onclick="window.printRepitencia()" class="flex items-center gap-2 px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 font-bold shadow-md transition-colors">
+                <i class="fa-solid fa-file-pdf"></i> Imprimir Repitencia
+            </button>
+            <button onclick="window.printTutoria()" class="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-md transition-colors">
+                <i class="fa-solid fa-file-contract"></i> Imprimir Tutoría
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Script Principal -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAisxzJVm2OzjYEXSi4Q7HxZEUG_aarQwo",
+            authDomain: "notas-liceo-agricola-sscc.firebaseapp.com",
+            databaseURL: "https://notas-liceo-agricola-sscc-default-rtdb.firebaseio.com",
+            projectId: "notas-liceo-agricola-sscc",
+            storageBucket: "notas-liceo-agricola-sscc.firebasestorage.app",
+            messagingSenderId: "434804825732",
+            appId: "1:434804825732:web:8c9035fa88be54cd6facd1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) { currentUser = user; window.loadHistoryFromDB(); } 
+            else { signInAnonymously(auth).catch(e => console.error("Auth:", e)); }
+        });
+
+        // --- Estado ---
+        let data = {
+            reportInfo: {
+                title: "INFORME DE REPITENCIA ESCOLAR",
+                number: "001-2025",
+                date: "2025-12-05" // Formato ISO para input date
+            },
+            student: {
+                name: "Tavita Andrea Jara González",
+                run: "22.683.425-7",
+                dob: "2008-03-25",
+                course: "1° Medio A",
+                guardian: "Marilyn González R.",
+                tutor: "Clara Peña Astroza",
+                tutorSubject: "Lengua y Literatura",
+                interviews: "19/11/24 - Se entrevista apoderado sobre riesgo.\n07/06/24 - Citación no asistida."
+            },
+            academic: {
+                sem1Avg: 3.9,
+                sem2Avg: 4.6,
+                finalAvg: 4.3,
+                courseAvg: 5.0,
+                failedSubjectsText: "Lengua y Literatura (3.8)\nMatemáticas (3.9)\nEducación Física y Salud (3.3)"
+            },
+            decree67Analysis: {
+                progress: "Hubo mejora del 3.9 al 4.6 en el segundo semestre, pero insuficiente para criterios mínimos.",
+                gap: "Brecha significativa. Promedio estudiante 4.3 vs Curso 5.0. Dificulta seguir el ritmo sin apoyo.",
+                socioemotional: "Autoestima baja afectando motivación. Necesidad de reforzar bienestar emocional y autoconfianza.",
+                additionalEvidence: ""
+            },
+            decision: {
+                status: "Repitencia", 
+                justification: "Promedio general 3.9 insuficiente (bajo 4.0). No cumple objetivos académicos mínimos. La repitencia se ve como oportunidad de consolidación y madurez socioemocional."
+            },
+            plan2025: {
+                schoolCommitments: "Reforzamiento en asignaturas críticas desde inicio de año\nMonitoreo mensual por UTP/Profesor Jefe\nTalleres de desarrollo personal (autoestima)\nSeguimiento de Inspectoría por inasistencias",
+                familyCommitments: "Participación activa en reuniones y entrevistas\nSupervisión de rutinas de estudio diarias\nGarantizar asistencia a clases"
+            },
+            tutoria: {
+                reportNumber: "001-2025-T",
+                tutor1: "Clara Peña Astroza",
+                tutor2: "",
+                reportDate: "2025-12-05",
+                showSem1: false,
+                showSem2: true,
+                sem1: { startMonth: "Marzo", endMonth: "Junio", situation: "", agreements: "", commitments: "", observations: "" },
+                sem2: { startMonth: "Julio", endMonth: "Diciembre", situation: "El estudiante a la fecha registra 3 promedios rojos...", agreements: "Se trabajó de forma diferenciada...", commitments: "Asistir a clases, mantener cuadernos...", observations: "Comunicación negativa por irresponsabilidad..." }
+            },
+            logoUrl: null
+        };
+
+        const criteriaOptions = {
+            progress: ["Aunque hubo mejora, el avance no es suficiente.", "Estancamiento en calificaciones."],
+            gap: ["Brecha significativa con el curso.", "Brecha leve recuperable con apoyo."],
+            socioemotional: ["Problemas de autoestima académica.", "Inmadurez socioemocional."]
+        };
+
+        let cachedHistory = [];
+
+        // --- Funciones de Datos ---
+        window.updateData = function(path, value) {
+            const keys = path.split('.'); let obj = data;
+            for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
+            obj[keys[keys.length - 1]] = value;
+
+            if(path === 'student.name') updateUI('name', value);
+            if(path === 'student.run') updateUI('run', value);
+            if(path.includes('academic') && document.getElementById('chart-container')) renderChartBars();
+            if(path.includes('tutoria.showSem')) renderTutoria();
+            // Si cambia datos académicos, re-renderizar tabla vertical también
+            if(path.includes('academic')) renderAnalisis();
+        };
+
+        function updateUI(type, value) {
+            if(type === 'name') {
+                document.querySelectorAll('.header-student-name').forEach(el => el.textContent = value);
+                const disp = document.getElementById('display-tut-student'); if(disp) disp.textContent = value;
+            }
+            if(type === 'run') {
+                document.querySelectorAll('.header-student-run').forEach(el => el.textContent = value);
+                const disp = document.getElementById('display-tut-run'); if(disp) disp.textContent = value;
+            }
+        }
+
+        window.saveData = async function() {
+            if (!currentUser) return alert("Conectando... espere un momento.");
+            try {
+                const cleanRut = data.student.run ? data.student.run.replace(/[^0-9kK]/g, '') : "sin_rut";
+                const docId = `${cleanRut}_${Date.now()}`;
+                await setDoc(doc(db, 'artifacts', 'liceo-agricola', 'public', 'data', 'informes', docId), {
+                    ...data,
+                    lastEditedBy: currentUser.uid,
+                    savedAt: new Date().toISOString()
+                });
+                alert('Informe guardado exitosamente.');
+                window.loadHistoryFromDB();
+            } catch (e) {
+                console.error(e);
+                alert('Error al guardar: ' + e.message);
+            }
+        };
+
+        window.loadHistoryFromDB = async function() {
+            const tbody = document.getElementById('historial-list-body');
+            try {
+                const q = collection(db, 'artifacts', 'liceo-agricola', 'public', 'data', 'informes');
+                const snapshot = await getDocs(q);
+                let docs = [];
+                snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+                docs.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+                cachedHistory = docs;
+                renderHistoryTable(docs);
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">Error al cargar historial: ${e.message}</td></tr>`;
+            }
+        };
+
+        function renderHistoryTable(docs) {
+            const tbody = document.getElementById('historial-list-body');
+            if (docs.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400">No hay informes.</td></tr>';
+            tbody.innerHTML = docs.map(doc => `
+                <tr class="bg-white border-b hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 text-slate-500 text-xs">${new Date(doc.savedAt).toLocaleDateString()}</td>
+                    <td class="px-4 py-3 font-medium text-slate-900">${doc.student?.name || 'Sin Nombre'}</td>
+                    <td class="px-4 py-3 text-slate-500">${doc.student?.run || '-'}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-bold ${doc.decision?.status === 'Repitencia' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">${doc.decision?.status || 'Pendiente'}</span></td>
+                    <td class="px-4 py-3 text-right space-x-2"><button onclick="window.loadReportForEdit('${doc.id}')" class="text-blue-600 border border-blue-200 px-2 py-1 rounded">Editar</button></td>
+                </tr>`).join('');
+        }
+
+        window.loadReportForEdit = function(docId) {
+            const report = cachedHistory.find(r => r.id === docId);
+            if(report) {
+                data = { ...report };
+                renderFicha(); renderAnalisis(); renderDecision(); renderTutoria();
+                updateUI('name', data.student.name); updateUI('run', data.student.run);
+                if(data.logoUrl) window.applyLogoToAll(data.logoUrl);
+                window.switchTab('ficha');
+                alert(`Informe cargado.`);
+            }
+        };
+
+        window.loadLogo = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => { data.logoUrl = e.target.result; window.applyLogoToAll(data.logoUrl); };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.applyLogoToAll = function(url) {
+            document.getElementById('screen-logo-container').innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
+            document.getElementById('screen-logo-container').classList.replace('bg-blue-800', 'bg-white');
+            const repLogo = document.getElementById('print-logo-repitencia');
+            repLogo.src = url; repLogo.classList.remove('hidden');
+            document.getElementById('placeholder-logo-rep').classList.add('hidden');
+            const tutLogo = document.getElementById('print-logo-tutoria');
+            if(tutLogo) { tutLogo.src = url; tutLogo.classList.remove('hidden'); document.getElementById('placeholder-logo-tut').classList.add('hidden'); }
+        };
+
+        window.printRepitencia = function() { document.body.classList.remove('printing-tutoria'); document.body.classList.add('printing-repitencia'); window.print(); };
+        window.printTutoria = function() { document.body.classList.remove('printing-repitencia'); document.body.classList.add('printing-tutoria'); window.print(); };
+
+        window.switchTab = function(tabId) {
+            const tabs = ['ficha', 'analisis', 'decision', 'tutoria', 'historial'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                if (t === tabId) { btn.classList.remove('border-transparent', 'text-slate-500'); btn.classList.add('border-blue-600', 'text-blue-600'); view.classList.remove('hidden-tab'); }
+                else { btn.classList.add('border-transparent', 'text-slate-500'); btn.classList.remove('border-blue-600', 'text-blue-600'); view.classList.add('hidden-tab'); }
+            });
+            if(tabId === 'tutoria') document.getElementById('print-header-general').style.display = 'none';
+            else if (tabId === 'historial') document.getElementById('print-header-general').style.display = 'none';
+            else document.getElementById('print-header-general').style.display = 'block';
+        };
+
+        window.appendText = function(path, textToAdd) {
+            const keys = path.split('.'); let obj = data; for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
+            let currentVal = obj[keys[keys.length - 1]] || "";
+            window.updateData(path, currentVal ? currentVal + "\n- " + textToAdd : "- " + textToAdd);
+            renderAnalisis();
+        };
+
+        window.toggleSuggestions = function(id) { document.getElementById(id).classList.toggle('hidden'); };
+
+        // --- Renders ---
+        function createSectionHTML(title, iconClass, contentHTML, extraClass = "") {
+            return `<div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6 ${extraClass} view-section"><div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2"><i class="${iconClass} text-blue-600 text-lg"></i><h3 class="text-lg font-semibold text-slate-800">${title}</h3></div>${contentHTML}</div>`;
+        }
+
+        function createCriteriaSelector(title, key, path, id) {
+            const options = criteriaOptions[key].map(opt => `<button onclick="window.appendText('${path}', '${opt}')" class="suggestion-btn w-full text-left p-2 text-sm text-slate-600 hover:bg-blue-50 border-b border-slate-100 flex gap-2"><i class="fa-solid fa-plus mt-1 text-xs opacity-50"></i> ${opt}</button>`).join('');
+            return `<div class="suggestion-btn-container no-print mb-3"><button onclick="window.toggleSuggestions('${id}')" class="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> Sugerencias</button><div id="${id}" class="hidden bg-white border border-slate-200 rounded-lg shadow-lg p-1 mt-1 z-10">${options}</div></div>`;
+        }
+
+        function renderFicha() {
+            const datos = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"><div><label class="text-xs font-semibold text-slate-500 uppercase">Nombre</label><input type="text" class="editable font-medium" value="${data.student.name}" oninput="window.updateData('student.name', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">RUN</label><input type="text" class="editable font-medium" value="${data.student.run}" oninput="window.updateData('student.run', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">Curso</label><input type="text" class="editable font-medium" value="${data.student.course}" oninput="window.updateData('student.course', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">Fecha Nac.</label><input type="text" class="editable font-medium" value="${data.student.dob}" placeholder="YYYY-MM-DD" oninput="window.updateData('student.dob', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">Apoderado</label><input type="text" class="editable font-medium" value="${data.student.guardian}" oninput="window.updateData('student.guardian', this.value)"></div></div>`;
+            const tutor = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-50 p-4 rounded-lg"><label class="text-xs font-semibold text-slate-500 uppercase">Tutor Principal</label><input type="text" class="editable font-medium mb-2" value="${data.student.tutor}" oninput="window.updateData('student.tutor', this.value); window.updateData('tutoria.tutor1', this.value)"><label class="text-xs font-semibold text-slate-500 uppercase">Asignatura</label><input type="text" class="editable text-sm" value="${data.student.tutorSubject}" oninput="window.updateData('student.tutorSubject', this.value)"></div><div class="bg-slate-50 p-4 rounded-lg"><h4 class="font-medium text-slate-700 mb-2">Historial Entrevistas</h4><textarea class="editable w-full text-sm h-32" placeholder="Registro...">${data.student.interviews}</textarea></div></div>`;
+            document.getElementById('view-ficha').innerHTML = createSectionHTML("Datos del Estudiante", "fa-solid fa-user", datos) + createSectionHTML("Tutoría y Acompañamiento", "fa-solid fa-users", tutor);
+        }
+
+        function renderAnalisis() {
+            // TABLA VERTICAL COMPACTA PARA PROMEDIOS
+            const tableHTML = `
+                <table class="w-full text-sm text-left border-collapse mb-6 vertical-grades-table">
+                    <thead class="bg-slate-100 uppercase text-xs">
+                        <tr><th class="border border-slate-300 p-2">Indicador</th><th class="border border-slate-300 p-2 text-center">Calificación</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="border border-slate-300 p-2 font-bold">Promedio 1º Semestre</td><td class="border border-slate-300 p-0"><input type="number" step="0.1" class="editable text-center font-bold text-red-600" value="${data.academic.sem1Avg}" oninput="window.updateData('academic.sem1Avg', this.value)"></td></tr>
+                        <tr><td class="border border-slate-300 p-2 font-bold">Promedio 2º Semestre</td><td class="border border-slate-300 p-0"><input type="number" step="0.1" class="editable text-center font-bold text-amber-600" value="${data.academic.sem2Avg}" oninput="window.updateData('academic.sem2Avg', this.value)"></td></tr>
+                        <tr><td class="border border-slate-300 p-2 font-bold bg-blue-50">PROMEDIO FINAL</td><td class="border border-slate-300 p-0 bg-blue-50"><input type="number" step="0.1" class="editable text-center font-bold text-slate-900" value="${data.academic.finalAvg}" oninput="window.updateData('academic.finalAvg', this.value)"></td></tr>
+                        <tr><td class="border border-slate-300 p-2 text-slate-500">Promedio del Curso</td><td class="border border-slate-300 p-0"><input type="number" step="0.1" class="editable text-center text-slate-600" value="${data.academic.courseAvg}" oninput="window.updateData('academic.courseAvg', this.value)"></td></tr>
+                    </tbody>
+                </table>
+            `;
+
+            const asig = `<p class="text-xs text-slate-500 mb-2 no-print">Asignaturas y notas:</p><textarea class="editable w-full h-24 text-red-800 bg-red-50 border-red-200 font-medium" oninput="window.updateData('academic.failedSubjectsText', this.value)">${data.academic.failedSubjectsText}</textarea>`;
+            
+            const ana = `<div class="space-y-4">
+                <div class="relative pl-4 border-l-4 border-blue-500"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Criterio A: Progreso</h4>${createCriteriaSelector('Sugerencias', 'progress', 'decree67Analysis.progress', 'sugg-progress')}<textarea class="editable w-full h-24" oninput="window.updateData('decree67Analysis.progress', this.value)">${data.decree67Analysis.progress}</textarea></div>
+                <div class="relative pl-4 border-l-4 border-blue-500"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Criterio B: Brecha</h4><div class="bg-slate-50 p-2 rounded mt-2 mb-2" id="chart-container"></div>${createCriteriaSelector('Sugerencias', 'gap', 'decree67Analysis.gap', 'sugg-gap')}<textarea class="editable w-full h-24" oninput="window.updateData('decree67Analysis.gap', this.value)">${data.decree67Analysis.gap}</textarea></div>
+                <div class="relative pl-4 border-l-4 border-purple-500"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Criterio C: Socioemocional</h4>${createCriteriaSelector('Sugerencias', 'socioemotional', 'decree67Analysis.socioemotional', 'sugg-socio')}<textarea class="editable w-full h-24" oninput="window.updateData('decree67Analysis.socioemotional', this.value)">${data.decree67Analysis.socioemotional}</textarea></div>
+                <div class="mt-4 pt-4 border-t border-slate-200"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Evidencias Adicionales</h4><textarea class="editable w-full h-24 bg-yellow-50 border-yellow-200" oninput="window.updateData('decree67Analysis.additionalEvidence', this.value)">${data.decree67Analysis.additionalEvidence}</textarea></div>
+            </div>`;
+            
+            document.getElementById('view-analisis').innerHTML = tableHTML + createSectionHTML("Asignaturas con Riesgo", "fa-solid fa-arrow-trend-down", asig) + createSectionHTML("Análisis Integral Art. 11", "fa-solid fa-chart-bar", ana);
+            renderChartBars();
+        }
+
+        function renderChartBars() {
+            const container = document.getElementById('chart-container'); if(!container) return;
+            const wEst = Math.min((data.academic.finalAvg/7)*100, 100), wCur = Math.min((data.academic.courseAvg/7)*100, 100);
+            container.innerHTML = `<div class="flex items-center gap-4 mb-2"><span class="w-20 text-xs font-bold">Estudiante</span><div class="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-red-500" style="width: ${wEst}%"></div></div><span class="text-xs font-bold">${data.academic.finalAvg}</span></div><div class="flex items-center gap-4"><span class="w-20 text-xs font-bold">Curso</span><div class="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-blue-500" style="width: ${wCur}%"></div></div><span class="text-xs font-bold">${data.academic.courseAvg}</span></div>`;
+        }
+
+        function renderDecision() {
+            const isRep = data.decision.status === 'Repitencia';
+            const html = `<div class="p-4 rounded-lg border-l-4 shadow-sm mb-4 ${isRep?'bg-red-50 border-red-500':'bg-green-50 border-green-500'}"><div class="flex items-center gap-3 mb-2"><h2 class="text-2xl font-bold">Decisión:</h2><select class="editable text-xl font-bold uppercase w-auto bg-white border-slate-300 rounded" onchange="window.updateData('decision.status', this.value); renderDecision()"><option value="Repitencia" ${isRep?'selected':''}>Repitencia</option><option value="Aprobación" ${!isRep?'selected':''}>Aprobación</option></select></div><label class="text-xs font-bold uppercase">Fundamentación:</label><textarea class="editable w-full h-24 italic bg-white" oninput="window.updateData('decision.justification', this.value)">${data.decision.justification}</textarea></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><h4 class="font-bold text-blue-800 mb-2">Compromisos Establecimiento</h4><textarea class="editable w-full h-48 bg-blue-50 border-blue-200 text-sm" oninput="window.updateData('plan2025.schoolCommitments', this.value)">${data.plan2025.schoolCommitments}</textarea></div><div><h4 class="font-bold text-purple-800 mb-2">Compromisos Familia</h4><textarea class="editable w-full h-48 bg-purple-50 border-purple-200 text-sm" oninput="window.updateData('plan2025.familyCommitments', this.value)">${data.plan2025.familyCommitments}</textarea></div></div><div class="mt-8 pt-8 border-t border-slate-300 grid grid-cols-2 gap-12 text-center"><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Profesor Jefe</p></div><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Alejandra Morales G.</p><p class="text-sm">Unidad Técnico Pedagógica</p></div></div>`;
+            document.getElementById('view-decision').innerHTML = createSectionHTML("Plan de Acompañamiento", "fa-solid fa-file-contract", html);
+        }
+
+        function renderTutoria() {
+            const controls = `<div class="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100 no-print flex gap-4"><label class="flex gap-2 text-sm cursor-pointer"><input type="checkbox" ${data.tutoria.showSem1?'checked':''} onchange="window.updateData('tutoria.showSem1', this.checked)"> Incluir 1º Semestre</label><label class="flex gap-2 text-sm cursor-pointer"><input type="checkbox" ${data.tutoria.showSem2?'checked':''} onchange="window.updateData('tutoria.showSem2', this.checked)"> Incluir 2º Semestre</label></div>`;
+            const header = `<div class="print-header-flex border-b-2 border-slate-800 pb-4 mb-4"><div class="flex-shrink-0 w-24 h-24 flex items-center justify-center"><img id="print-logo-tutoria" src="${data.logoUrl||''}" class="print-logo w-full h-full object-contain ${data.logoUrl?'':'hidden'}"><div id="placeholder-logo-tut" class="text-xs text-slate-400 border-2 border-dashed p-1 rounded no-print ${data.logoUrl?'hidden':''}">Logo</div></div><div class="text-center flex-1"><h1 class="text-3xl font-bold">INFORME TUTORÍA</h1><p class="text-sm font-bold text-slate-500 mt-2">INFORMACIÓN PERSONAL</p></div><div class="text-right text-sm"><div class="flex justify-end items-center gap-2"><span class="font-bold">Nº:</span><input type="text" class="font-bold text-red-600 text-right transparent-input w-24" value="${data.tutoria.reportNumber}" oninput="window.updateData('tutoria.reportNumber', this.value)"></div></div></div>`;
+            const info = `<div class="grid grid-cols-[150px_1fr] gap-y-2 mb-6 text-sm"><div class="font-bold">Tutor 1:</div><input type="text" class="editable border-b border-dotted p-0" value="${data.tutoria.tutor1}" oninput="window.updateData('tutoria.tutor1', this.value)"><div class="font-bold">Tutor 2:</div><input type="text" class="editable border-b border-dotted p-0" value="${data.tutoria.tutor2}" oninput="window.updateData('tutoria.tutor2', this.value)"><div class="font-bold mt-1">Estudiante:</div><div id="display-tut-student" class="mt-1 border-b border-slate-200">${data.student.name}</div><div class="font-bold">RUN:</div><div id="display-tut-run" class="border-b border-slate-200">${data.student.run}</div><div class="font-bold">Fecha:</div><input type="date" class="editable border-b border-dotted p-0" value="${data.tutoria.reportDate}" oninput="window.updateData('tutoria.reportDate', this.value)"></div>`;
+            
+            const createSem = (n, d, p) => `<div class="mb-6"><h3 class="font-bold border-b border-slate-300 mb-2 pb-1 uppercase">Tutoría Semestre Nº ${n}</h3><div class="grid grid-cols-2 gap-4 mb-2"><div class="flex gap-2"><label class="font-bold text-sm">Inicio:</label><input class="editable w-32" value="${d.startMonth}" oninput="window.updateData('${p}.startMonth', this.value)"></div><div class="flex gap-2"><label class="font-bold text-sm">Fin:</label><input class="editable w-32" value="${d.endMonth}" oninput="window.updateData('${p}.endMonth', this.value)"></div></div><div class="space-y-3"><div><h4 class="font-bold text-xs uppercase">Situación</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.situation', this.value)">${d.situation}</textarea></div><div><h4 class="font-bold text-xs uppercase">Acuerdos</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.agreements', this.value)">${d.agreements}</textarea></div><div><h4 class="font-bold text-xs uppercase">Compromisos</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.commitments', this.value)">${d.commitments}</textarea></div><div><h4 class="font-bold text-xs uppercase">Observaciones</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.observations', this.value)">${d.observations}</textarea></div></div></div>`;
+            
+            const sem1 = data.tutoria.showSem1 ? createSem(1, data.tutoria.sem1, 'tutoria.sem1') : '';
+            const sem2 = data.tutoria.showSem2 ? createSem(2, data.tutoria.sem2, 'tutoria.sem2') : '';
+            const signs = `<div class="mt-8 pt-8 border-t border-slate-300 grid grid-cols-2 gap-12 text-center"><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Firma Profesor Tutor</p></div><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Alejandra Morales G.</p><p class="text-sm">Unidad Técnico Pedagógica</p></div></div>`;
+            document.getElementById('view-tutoria').innerHTML = controls + `<div class="bg-white p-8 rounded-lg shadow-sm border border-slate-200 print:border-none print:shadow-none print:p-0">${header}${info}${sem1}${sem2}${signs}</div>`;
+        }
+
+        renderFicha(); renderAnalisis(); renderDecision(); renderTutoria();
+        window.switchTab('ficha');
+    </script>
+</body>
+</html>
