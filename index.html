@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Decreto 67 - Historial y Edición</title>
+    <title>Gestor Decreto 67 - Optimizado</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,7 +18,7 @@
             @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         }
 
-        /* TIPOGRAFÍA GLOBAL EN PANTALLA Y PAPEL */
+        /* TIPOGRAFÍA GLOBAL: ARIAL */
         body, input, textarea, select, button {
             font-family: Arial, Helvetica, sans-serif !important;
         }
@@ -66,7 +66,7 @@
         }
         .logo-placeholder:hover { border-color: #60a5fa; background-color: rgba(255,255,255,0.1); }
 
-        /* --- REGLAS DE IMPRESIÓN CONTINUA --- */
+        /* --- REGLAS DE IMPRESIÓN --- */
         @media print {
             .no-print, header, nav, #action-buttons, .suggestion-btn-container, .logo-upload-hint { 
                 display: none !important; 
@@ -111,10 +111,10 @@
 
             /* Flujo continuo de secciones */
             .view-section {
-                margin-bottom: 10px; /* Reducido para evitar huecos */
+                margin-bottom: 10px;
                 display: block;
                 width: 100%;
-                break-inside: auto; /* Permitir salto si es necesario para continuidad */
+                break-inside: auto;
             }
 
             /* Transformación de inputs a texto plano */
@@ -130,7 +130,7 @@
                 display: block;
                 height: auto !important;
                 min-height: 0 !important;
-                white-space: pre-wrap; /* Respetar saltos de línea */
+                white-space: pre-wrap;
             }
             
             /* Ajustes de página */
@@ -148,7 +148,7 @@
             }
             .print-logo { width: 90px; height: 90px; object-fit: contain; }
             
-            /* Eliminar estilos de tarjeta para ahorrar tinta y espacio */
+            /* Eliminar estilos de tarjeta para ahorrar tinta */
             .bg-white, .rounded-lg, .shadow-sm, .border {
                 box-shadow: none !important;
                 border: none !important;
@@ -164,7 +164,7 @@
                 margin-left: 0 !important;
             }
             
-            /* Título editable que se ajuste */
+            /* Título editable */
             .editable-title {
                 font-size: 16pt !important;
                 line-height: 1.2 !important;
@@ -362,12 +362,11 @@
             else { signInAnonymously(auth).catch(e => console.error("Auth:", e)); }
         });
 
-        // --- Estado ---
         let data = {
             reportInfo: {
                 title: "INFORME DE REPITENCIA ESCOLAR",
                 number: "001-2025",
-                date: "2025-12-05" // Formato ISO para input date
+                date: "2025-12-05" 
             },
             student: {
                 name: "Tavita Andrea Jara González",
@@ -421,7 +420,6 @@
 
         let cachedHistory = [];
 
-        // --- Funciones de Datos ---
         window.updateData = function(path, value) {
             const keys = path.split('.'); let obj = data;
             for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
@@ -431,7 +429,6 @@
             if(path === 'student.run') updateUI('run', value);
             if(path.includes('academic') && document.getElementById('chart-container')) renderChartBars();
             if(path.includes('tutoria.showSem')) renderTutoria();
-            // Si cambia datos académicos, re-renderizar tabla vertical también
             if(path.includes('academic')) renderAnalisis();
         };
 
@@ -462,6 +459,55 @@
                 console.error(e);
                 alert('Error al guardar: ' + e.message);
             }
+        };
+
+        // --- MANEJO DE IMÁGENES Y COMPRESIÓN ---
+        window.loadLogo = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // COMPRESIÓN DE IMAGEN PARA EVITAR ERROR DE 1MB
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Redimensionar a máximo 300px
+                        const MAX_WIDTH = 300; 
+                        const MAX_HEIGHT = 300;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else {
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convertir a JPEG calidad 0.7
+                        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        data.logoUrl = resizedDataUrl;
+                        window.applyLogoToAll(data.logoUrl);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.applyLogoToAll = function(url) {
+            document.getElementById('screen-logo-container').innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
+            document.getElementById('screen-logo-container').classList.replace('bg-blue-800', 'bg-white');
+            const repLogo = document.getElementById('print-logo-repitencia');
+            repLogo.src = url; repLogo.classList.remove('hidden');
+            document.getElementById('placeholder-logo-rep').classList.add('hidden');
+            const tutLogo = document.getElementById('print-logo-tutoria');
+            if(tutLogo) { tutLogo.src = url; tutLogo.classList.remove('hidden'); document.getElementById('placeholder-logo-tut').classList.add('hidden'); }
         };
 
         window.loadHistoryFromDB = async function() {
@@ -503,25 +549,6 @@
                 window.switchTab('ficha');
                 alert(`Informe cargado.`);
             }
-        };
-
-        window.loadLogo = function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = e => { data.logoUrl = e.target.result; window.applyLogoToAll(data.logoUrl); };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        window.applyLogoToAll = function(url) {
-            document.getElementById('screen-logo-container').innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
-            document.getElementById('screen-logo-container').classList.replace('bg-blue-800', 'bg-white');
-            const repLogo = document.getElementById('print-logo-repitencia');
-            repLogo.src = url; repLogo.classList.remove('hidden');
-            document.getElementById('placeholder-logo-rep').classList.add('hidden');
-            const tutLogo = document.getElementById('print-logo-tutoria');
-            if(tutLogo) { tutLogo.src = url; tutLogo.classList.remove('hidden'); document.getElementById('placeholder-logo-tut').classList.add('hidden'); }
         };
 
         window.printRepitencia = function() { document.body.classList.remove('printing-tutoria'); document.body.classList.add('printing-repitencia'); window.print(); };
