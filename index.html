@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor Decreto 67 - Sistema Integral</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -26,25 +23,45 @@
         }
 
         /* TIPOGRAFÍA GLOBAL */
-        body, input, textarea, select, button {
+        body, input, textarea, select, button, div {
             font-family: Arial, Helvetica, sans-serif !important;
         }
 
-        /* Estilos de Formulario */
+        /* Estilos de Formulario Genéricos */
         input.editable, textarea.editable, select.editable, div.editable-div {
             border: 1px solid #e2e8f0;
             background-color: #f8fafc;
             border-radius: 0.375rem;
-            padding: 0.25rem 0.5rem;
+            padding: 0.5rem;
             width: 100%;
             transition: border-color 0.2s, background-color 0.2s;
             font-size: 0.95rem;
+            line-height: 1.5;
         }
         input.editable:focus, textarea.editable:focus, select.editable:focus, div.editable-div:focus {
             outline: none;
             border-color: #3b82f6;
             background-color: #ffffff;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Auto-expansión en pantalla */
+        .auto-grow {
+            min-height: 60px;
+            overflow-y: hidden; 
+            resize: none; 
+            display: block;
+        }
+
+        /* CLASE PARA IMPRESIÓN (Texto expandido) */
+        .print-text-block {
+            display: none; /* Oculto en pantalla */
+            white-space: pre-wrap; /* Mantiene párrafos */
+            text-align: justify;
+            width: 100%;
+            font-size: 10pt; /* Tamaño óptimo para impresión */
+            line-height: 1.4;
+            color: #000;
         }
         
         /* Inputs transparentes */
@@ -84,12 +101,26 @@
             .no-print, header, nav, #action-buttons, .suggestion-btn-container, .logo-upload-hint, .template-buttons, #delete-modal { 
                 display: none !important; 
             }
+
+            /* Ocultar inputs/textareas de edición y mostrar bloques de texto */
+            textarea.editable { display: none !important; }
+            .print-text-block { display: block !important; border: none !important; padding: 0 !important; margin-top: 5px; }
             
+            /* Ajustes para inputs de una línea (Nombre, RUT, etc) */
+            input.editable {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                height: auto !important;
+                font-weight: bold;
+            }
+
             body { 
                 background-color: white; 
                 color: black; 
                 font-size: 11pt !important;
-                line-height: 1.2;
+                line-height: 1.3;
             }
             .container { 
                 max-width: 100% !important; 
@@ -98,6 +129,7 @@
                 width: 100% !important;
             }
 
+            /* Control de Vistas */
             body.printing-repitencia #view-ficha,
             body.printing-repitencia #view-analisis,
             body.printing-repitencia #view-decision,
@@ -112,21 +144,15 @@
             body.printing-tutoria #print-header-general,
             body.printing-tutoria #view-historial { display: none !important; }
 
-            .view-section { margin-bottom: 10px; display: block; width: 100%; break-inside: auto; }
+            .view-section { margin-bottom: 15px; display: block; width: 100%; break-inside: auto; }
+            
+            .avoid-break {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
 
-            input.editable, textarea.editable, select.editable, div.editable-div {
-                border: none !important;
-                background: transparent !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                resize: none;
-                box-shadow: none !important;
-                overflow: visible;
-                font-weight: 500;
-                display: block;
-                height: auto !important;
-                min-height: 0 !important;
-                white-space: pre-wrap;
+            .print-spacer {
+                margin-bottom: 0.5cm !important;
             }
             
             @page { margin: 1.5cm; size: letter; }
@@ -142,11 +168,15 @@
             }
             .print-logo { width: 90px; height: 90px; object-fit: contain; }
             
+            /* Limpieza visual */
             .bg-white, .rounded-lg, .shadow-sm, .border {
                 box-shadow: none !important;
                 border: none !important;
                 border-radius: 0 !important;
                 padding: 0 !important;
+            }
+            .bg-slate-50, .bg-blue-50, .bg-red-50, .bg-green-50, .bg-purple-50, .bg-yellow-50 {
+                background-color: transparent !important; /* Quita fondos de color al imprimir */
             }
             
             .border-b { border-bottom: 1px solid #ccc !important; margin-bottom: 5px !important; }
@@ -175,7 +205,6 @@
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 min-h-screen pb-12">
 
-    <!-- Modal de Eliminación -->
     <div id="delete-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md mx-4 animate-bounce-in">
             <div class="text-center mb-4">
@@ -206,7 +235,6 @@
 
     <input type="file" id="logo-uploader" accept="image/*" class="hidden" onchange="window.loadLogo(event)">
 
-    <!-- Header App -->
     <header class="bg-blue-900 text-white shadow-lg no-print">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center gap-4">
@@ -232,7 +260,6 @@
         </div>
     </header>
 
-    <!-- Navegación -->
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-10 no-print shadow-sm">
         <div class="container mx-auto px-6 overflow-x-auto">
             <div class="flex space-x-6" id="nav-tabs">
@@ -255,14 +282,11 @@
         </div>
     </nav>
 
-    <!-- Contenido Principal -->
     <main class="container mx-auto px-4 md:px-6 py-8 max-w-5xl">
         
-        <!-- ENCABEZADO DOCUMENTO -->
         <div id="print-header-general" class="hidden-tab-tutoria hidden-tab-historial">
             <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-6 print:mb-2">
                 <div class="print-header-flex flex flex-col md:flex-row items-center justify-between gap-4 border-b-2 border-slate-800 pb-4">
-                    <!-- Logo -->
                     <div class="w-24 h-24 flex-shrink-0 flex items-center justify-center">
                         <img id="print-logo-repitencia" src="" class="print-logo w-full h-full object-contain hidden" alt="Logo">
                         <div id="placeholder-logo-rep" class="text-xs text-slate-400 text-center border-2 border-dashed border-slate-200 p-2 rounded no-print cursor-pointer" onclick="document.getElementById('logo-uploader').click()">
@@ -270,7 +294,6 @@
                         </div>
                     </div>
                     
-                    <!-- Título -->
                     <div class="text-center flex-1 w-full">
                         <div contenteditable="true" 
                              class="editable-title text-2xl font-bold text-slate-900 text-center w-full uppercase outline-none focus:bg-blue-50 rounded p-1"
@@ -278,7 +301,6 @@
                         <p class="text-sm text-slate-500 mt-1">Según Decreto de Evaluación y Promoción Nº 67/2018</p>
                     </div>
 
-                    <!-- Datos Admin -->
                     <div class="text-right text-sm min-w-[150px]">
                         <div class="flex items-center justify-end gap-2 mb-1">
                             <span class="font-bold text-slate-700">Nº Folio:</span>
@@ -296,16 +318,13 @@
             </div>
         </div>
 
-        <!-- VISTAS -->
         <div id="view-ficha" class="view-section"></div>
         <div id="view-analisis" class="view-section hidden-tab mt-6"></div>
         <div id="view-decision" class="view-section hidden-tab mt-6"></div>
         <div id="view-tutoria" class="view-section hidden-tab mt-6"></div>
         
-        <!-- VISTA GESTIÓN E HISTORIAL -->
         <div id="view-historial" class="view-section hidden-tab mt-6 no-print">
             
-            <!-- Panel de Estadísticas -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div class="bg-white p-4 rounded-lg shadow border border-slate-200">
                     <p class="text-xs font-bold text-slate-500 uppercase">Total Informes</p>
@@ -321,7 +340,6 @@
                 </div>
             </div>
 
-            <!-- Tabla y Filtros -->
             <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -365,7 +383,6 @@
             </div>
         </div>
 
-        <!-- Botones de Acción -->
         <div id="action-buttons" class="flex justify-end gap-4 mt-8 no-print pb-12 flex-wrap">
             <button onclick="window.saveData()" class="flex items-center gap-2 px-4 py-2 border border-green-600 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 font-medium transition-colors">
                 <i class="fa-solid fa-cloud-arrow-up"></i> Guardar y Generar Folio
@@ -380,7 +397,6 @@
 
     </main>
 
-    <!-- Script Principal -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -405,6 +421,38 @@
             if (user) { currentUser = user; window.loadHistoryFromDB(); } 
             else { signInAnonymously(auth).catch(e => console.error("Auth:", e)); }
         });
+
+        // --- FUNCIÓN MEJORADA: AJUSTE AUTOMÁTICO DE ALTURA ---
+        window.autoResize = function(el) {
+            if (!el) return;
+            el.style.height = 'auto'; // Resetea para medir
+            el.style.height = (el.scrollHeight + 2) + 'px'; 
+        };
+
+        // --- NUEVA FUNCIÓN: Sincronizar input con div de impresión (DUAL SYSTEM) ---
+        window.syncPrintText = function(textarea, path) {
+            window.autoResize(textarea);
+            window.updateData(path, textarea.value);
+            // Buscar el div hermano para impresión y actualizarlo
+            const printDiv = textarea.nextElementSibling;
+            if (printDiv && printDiv.classList.contains('print-text-block')) {
+                printDiv.textContent = textarea.value;
+            }
+        };
+
+        // --- CREAR BLOQUE EDITABLE (REUTILIZABLE PARA AMBOS INFORMES) ---
+        window.createEditableBlock = function(label, value, path, heightClass = "h-24", extraClass = "") {
+            const header = label ? `<h4 class="font-bold text-xs uppercase text-slate-700 mb-1 bg-slate-50 p-1 inline-block rounded border border-slate-200">${label}</h4>` : '';
+            return `
+            <div class="avoid-break mb-4 ${extraClass}">
+                ${header}
+                <textarea 
+                    class="editable w-full text-justify text-sm auto-grow transition-all duration-200 ease-in-out ${heightClass}" 
+                    oninput="window.syncPrintText(this, '${path}')"
+                >${value || ''}</textarea>
+                <div class="print-text-block text-sm text-justify">${value || ''}</div>
+            </div>`;
+        };
 
         // --- Estado ---
         let data = {
@@ -437,38 +485,14 @@
             logoUrl: null
         };
 
-        // --- BANCO DE SUGERENCIAS RESTAURADO ---
         const criteriaOptions = {
-            progress: [
-                "Aunque hubo mejora en el segundo semestre, el avance no fue suficiente para alcanzar los estándares mínimos.",
-                "El estudiante muestra un estancamiento en sus calificaciones a lo largo del año académico.",
-                "Se observa una mejora sostenida, pero el déficit inicial impide la aprobación matemática.",
-                "Rendimiento fluctuante directamente asociado a la inasistencia reiterada a clases.",
-                "Presenta dificultades significativas en la base de contenidos que dificultan la adquisición de nuevos aprendizajes.",
-                "A pesar de los apoyos pedagógicos brindados, no se evidencia un progreso acorde al nivel esperado."
-            ],
-            gap: [
-                "La brecha con el curso es significativa, lo que dificultaría su desempeño en el siguiente nivel.",
-                "Existe una brecha académica leve, potencialmente recuperable con apoyo focalizado el próximo año.",
-                "El estudiante se encuentra muy por debajo del promedio del curso en asignaturas troncales.",
-                "Su ritmo de aprendizaje es más lento que el del grupo curso, requiriendo adaptaciones que no siempre logran el objetivo.",
-                "Se observa una brecha importante en el desarrollo de habilidades de orden superior (análisis, síntesis).",
-                "Falta de autonomía en el trabajo escolar genera dependencia del docente, aumentando la brecha con sus pares."
-            ],
-            socioemotional: [
-                "Se observan problemas de autoestima académica que impactan negativamente en su motivación y rendimiento.",
-                "El estudiante presenta inmadurez socioemocional respecto a su grupo etario, afectando su integración.",
-                "Situación familiar compleja ha interferido en su regularidad y compromiso escolar.",
-                "Manifiesta baja tolerancia a la frustración frente a desafíos académicos.",
-                "Se requiere fortalecer el vínculo con sus pares y el sentido de pertenencia al establecimiento.",
-                "Es necesario trabajar en su autoconfianza y en la proyección de metas personales a corto plazo."
-            ]
+            progress: ["Aunque hubo mejora en el segundo semestre, el avance no fue suficiente...", "El estudiante muestra un estancamiento...", "Se observa una mejora sostenida, pero el déficit inicial...", "Rendimiento fluctuante..."],
+            gap: ["La brecha con el curso es significativa...", "Existe una brecha académica leve...", "El estudiante se encuentra muy por debajo del promedio...", "Falta de autonomía en el trabajo escolar..."],
+            socioemotional: ["Se observan problemas de autoestima académica...", "Situación familiar compleja...", "Manifiesta baja tolerancia a la frustración...", "Se requiere fortalecer el vínculo..."]
         };
 
         let cachedHistory = [];
-        let itemToDelete = null; 
 
-        // --- Funciones de Datos ---
         window.updateData = function(path, value) {
             const keys = path.split('.'); let obj = data;
             for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
@@ -497,7 +521,7 @@
         function updateUI(type, value) {
             if(type === 'name') {
                 document.querySelectorAll('.header-student-name').forEach(el => el.textContent = value || "Estudiante");
-                const input = document.getElementById('input-tut-student'); if(input && input !== document.activeElement) input.value = value;
+                const input = document.getElementById('input-tut-name'); if(input && input !== document.activeElement) input.value = value;
             }
             if(type === 'run') {
                 document.querySelectorAll('.header-student-run').forEach(el => el.textContent = value || "RUT");
@@ -508,9 +532,8 @@
             }
         }
 
-        // --- Plantillas de Tutoría ---
         window.fillTutoriaTemplate = function(type) {
-            if(type === 'success') {
+             if(type === 'success') {
                 window.updateData('tutoria.sem2.situation', 'El estudiante ha demostrado un avance significativo, superando las dificultades detectadas en el diagnóstico inicial. Ha mejorado su asistencia y participación en clases.');
                 window.updateData('tutoria.sem2.agreements', 'Se acuerda mantener el monitoreo periódico pero se da por finalizado el plan de intervención intensiva debido a los buenos resultados.');
                 window.updateData('tutoria.sem2.commitments', 'Mantener la constancia en el estudio y la asistencia regular.');
@@ -541,8 +564,7 @@
                     if (seq > maxSeq) maxSeq = seq;
                 }
             });
-            const nextSeq = maxSeq + 1;
-            return `${String(nextSeq).padStart(3, '0')}-${year}`;
+            return `${String(maxSeq + 1).padStart(3, '0')}-${year}`;
         }
 
         window.saveData = async function() {
@@ -578,14 +600,8 @@
                 const q = collection(db, 'artifacts', 'liceo-agricola', 'public', 'data', 'informes');
                 const snapshot = await getDocs(q);
                 let docs = [];
-                snapshot.forEach(doc => docs.push({ ...doc.data(), id: doc.id })); // FIX: Ensure ID is part of the object
-                
-                docs.sort((a, b) => {
-                    const numA = parseInt((a.reportInfo?.number || "0").split('-')[0]);
-                    const numB = parseInt((b.reportInfo?.number || "0").split('-')[0]);
-                    return numB - numA;
-                });
-                
+                snapshot.forEach(doc => docs.push({ ...doc.data(), id: doc.id })); 
+                docs.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
                 cachedHistory = docs;
                 calculateStats(docs); 
                 window.filterHistory(); 
@@ -599,17 +615,11 @@
             const totalEl = document.getElementById('stat-total');
             const repitenciaEl = document.getElementById('stat-repitencia');
             const promedioEl = document.getElementById('stat-promedio');
-
-            if (!totalEl || !repitenciaEl || !promedioEl) return;
-
-            const total = docs.length;
-            const repitencia = docs.filter(d => d.decision?.status === 'Repitencia').length;
+            if (!totalEl) return;
+            totalEl.textContent = docs.length;
+            repitenciaEl.textContent = docs.filter(d => d.decision?.status === 'Repitencia').length;
             const validGrades = docs.map(d => parseFloat(d.academic?.finalAvg)).filter(n => !isNaN(n) && n > 0);
-            const avg = validGrades.length ? (validGrades.reduce((a, b) => a + b, 0) / validGrades.length).toFixed(1) : "0.0";
-
-            totalEl.textContent = total;
-            repitenciaEl.textContent = repitencia;
-            promedioEl.textContent = avg;
+            promedioEl.textContent = validGrades.length ? (validGrades.reduce((a, b) => a + b, 0) / validGrades.length).toFixed(1) : "0.0";
         }
 
         window.filterHistory = function() {
@@ -624,24 +634,13 @@
 
         window.exportToExcel = function() {
             if (!cachedHistory.length) return alert("No hay datos para exportar.");
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Folio,Fecha,Nombre Estudiante,RUT,Curso,Promedio Final,Decision,Causa\n"; 
+            let csvContent = "data:text/csv;charset=utf-8,Folio,Fecha,Nombre Estudiante,RUT,Curso,Promedio Final,Decision,Causa\n"; 
             cachedHistory.forEach(doc => {
-                const row = [
-                    doc.reportInfo?.number || "",
-                    new Date(doc.savedAt).toLocaleDateString(),
-                    `"${doc.student?.name || ""}"`,
-                    doc.student?.run || "",
-                    doc.student?.course || "",
-                    doc.academic?.finalAvg || "",
-                    doc.decision?.status || "",
-                    `"${(doc.decision?.justification || "").replace(/\n/g, ' ')}"`
-                ].join(",");
+                const row = [doc.reportInfo?.number, new Date(doc.savedAt).toLocaleDateString(), `"${doc.student?.name}"`, doc.student?.run, doc.student?.course, doc.academic?.finalAvg, doc.decision?.status, `"${(doc.decision?.justification || "").replace(/\n/g, ' ')}"`].join(",");
                 csvContent += row + "\n";
             });
-            const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", encodeURI(csvContent));
             link.setAttribute("download", `reporte_decreto67_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
@@ -649,37 +648,19 @@
         };
 
         window.deleteReport = async function(docId, folio, studentName) {
-            const responsibleName = prompt(`ADVERTENCIA: Está a punto de eliminar el expediente completo (Repitencia + Tutoría) del estudiante ${studentName}.\n\nPara confirmar y auditar esta acción, escriba SU NOMBRE:`);
-            if (!responsibleName || responsibleName.trim().length < 3) {
-                alert("Eliminación cancelada. Debe ingresar un nombre válido.");
-                return;
-            }
-
-            const row = document.getElementById(`row-${docId}`);
-            if(row) { row.classList.add('fade-out-row'); setTimeout(() => row.style.display = 'none', 500); }
-
-            cachedHistory = cachedHistory.filter(d => d.id !== docId);
-            calculateStats(cachedHistory);
-
+            const responsibleName = prompt(`ADVERTENCIA: Está a punto de eliminar el expediente de ${studentName}.\n\nPara confirmar, escriba SU NOMBRE:`);
+            if (!responsibleName || responsibleName.trim().length < 3) return alert("Cancelado.");
             try {
-                await addDoc(collection(db, 'artifacts', 'liceo-agricola', 'public', 'data', 'logs_eliminacion'), {
-                    deletedFolio: folio, deletedStudent: studentName, deletedBy: responsibleName, deletedAt: new Date().toISOString(), originalDocId: docId
-                });
+                await addDoc(collection(db, 'artifacts', 'liceo-agricola', 'public', 'data', 'logs_eliminacion'), { deletedFolio: folio, deletedStudent: studentName, deletedBy: responsibleName, deletedAt: new Date().toISOString() });
                 await deleteDoc(doc(db, 'artifacts', 'liceo-agricola', 'public', 'data', 'informes', docId));
-                console.log(`Informe ${folio} eliminado correctamente.`);
-            } catch (e) {
-                console.error(e);
-                alert("Error al eliminar en el servidor. Refresque la página.");
-                if(row) { row.classList.remove('fade-out-row'); row.style.display = ''; }
                 window.loadHistoryFromDB();
-            }
+            } catch (e) { alert("Error al eliminar."); }
         };
 
         function renderHistoryTable(docs) {
             const tbody = document.getElementById('historial-list-body');
             if(!tbody) return;
             if (docs.length === 0) return tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">No se encontraron resultados.</td></tr>';
-            
             tbody.innerHTML = docs.map(doc => `
                 <tr id="row-${doc.id}" class="bg-white border-b hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-3 font-bold text-slate-700">${doc.reportInfo?.number || "S/N"}</td>
@@ -762,9 +743,10 @@
             return `<div class="suggestion-btn-container no-print mb-3"><button onclick="window.toggleSuggestions('${id}')" class="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> Sugerencias</button><div id="${id}" class="hidden bg-white border border-slate-200 rounded-lg shadow-lg p-1 mt-1 z-10">${options}</div></div>`;
         }
 
+        // --- ACTUALIZACIÓN: Renderizado con sistema DUAL (Pantalla/Impresión) ---
         function renderFicha() {
             const datos = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"><div><label class="text-xs font-semibold text-slate-500 uppercase">Nombre</label><input type="text" class="editable font-medium" value="${data.student.name}" oninput="window.updateData('student.name', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">RUN</label><input type="text" class="editable font-medium" value="${data.student.run}" oninput="window.updateData('student.run', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">Curso</label><input type="text" class="editable font-medium" value="${data.student.course}" oninput="window.updateData('student.course', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">Fecha Nac.</label><input type="text" class="editable font-medium" value="${data.student.dob}" placeholder="YYYY-MM-DD" oninput="window.updateData('student.dob', this.value)"></div><div><label class="text-xs font-semibold text-slate-500 uppercase">Apoderado</label><input type="text" class="editable font-medium" value="${data.student.guardian}" oninput="window.updateData('student.guardian', this.value)"></div></div>`;
-            const tutor = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-50 p-4 rounded-lg"><label class="text-xs font-semibold text-slate-500 uppercase">Tutor Principal</label><input type="text" class="editable font-medium mb-2" value="${data.student.tutor}" oninput="window.updateData('student.tutor', this.value); window.updateData('tutoria.tutor1', this.value)"><label class="text-xs font-semibold text-slate-500 uppercase">Asignatura</label><input type="text" class="editable text-sm" value="${data.student.tutorSubject}" oninput="window.updateData('student.tutorSubject', this.value)"></div><div class="bg-slate-50 p-4 rounded-lg"><h4 class="font-medium text-slate-700 mb-2">Historial Entrevistas</h4><textarea class="editable w-full text-sm h-32" placeholder="Registro...">${data.student.interviews}</textarea></div></div>`;
+            const tutor = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-50 p-4 rounded-lg"><label class="text-xs font-semibold text-slate-500 uppercase">Tutor Principal</label><input type="text" class="editable font-medium mb-2" value="${data.student.tutor}" oninput="window.updateData('student.tutor', this.value); window.updateData('tutoria.tutor1', this.value)"><label class="text-xs font-semibold text-slate-500 uppercase">Asignatura</label><input type="text" class="editable text-sm" value="${data.student.tutorSubject}" oninput="window.updateData('student.tutorSubject', this.value)"></div><div class="bg-slate-50 p-4 rounded-lg"><h4 class="font-medium text-slate-700 mb-2">Historial Entrevistas</h4>${window.createEditableBlock('', data.student.interviews, 'student.interviews', 'h-32')}</div></div>`;
             document.getElementById('view-ficha').innerHTML = createSectionHTML("Datos del Estudiante", "fa-solid fa-user", datos) + createSectionHTML("Tutoría y Acompañamiento", "fa-solid fa-users", tutor);
         }
 
@@ -781,12 +763,26 @@
                         <tr><td class="border border-slate-300 p-2 text-slate-500">Promedio del Curso</td><td class="border border-slate-300 p-0"><input id="input-course" type="number" step="0.1" class="editable text-center text-slate-600" value="${data.academic.courseAvg}" oninput="window.updateData('academic.courseAvg', this.value)"></td></tr>
                     </tbody>
                 </table>`;
-            const asig = `<p class="text-xs text-slate-500 mb-2 no-print">Asignaturas y notas:</p><textarea class="editable w-full h-24 text-red-800 bg-red-50 border-red-200 font-medium" oninput="window.updateData('academic.failedSubjectsText', this.value)">${data.academic.failedSubjectsText}</textarea>`;
+            
+            const asig = `<p class="text-xs text-slate-500 mb-2 no-print">Asignaturas y notas:</p>${window.createEditableBlock('', data.academic.failedSubjectsText, 'academic.failedSubjectsText', 'h-24', 'text-red-800')}`;
+            
             const ana = `<div class="space-y-4">
-                <div class="relative pl-4 border-l-4 border-blue-500"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Criterio A: Progreso</h4>${createCriteriaSelector('Sugerencias', 'progress', 'decree67Analysis.progress', 'sugg-progress')}<textarea class="editable w-full h-24" oninput="window.updateData('decree67Analysis.progress', this.value)">${data.decree67Analysis.progress}</textarea></div>
-                <div class="relative pl-4 border-l-4 border-blue-500"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Criterio B: Brecha</h4><div class="bg-slate-50 p-2 rounded mt-2 mb-2" id="chart-container"></div>${createCriteriaSelector('Sugerencias', 'gap', 'decree67Analysis.gap', 'sugg-gap')}<textarea class="editable w-full h-24" oninput="window.updateData('decree67Analysis.gap', this.value)">${data.decree67Analysis.gap}</textarea></div>
-                <div class="relative pl-4 border-l-4 border-purple-500"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Criterio C: Socioemocional</h4>${createCriteriaSelector('Sugerencias', 'socioemotional', 'decree67Analysis.socioemotional', 'sugg-socio')}<textarea class="editable w-full h-24" oninput="window.updateData('decree67Analysis.socioemotional', this.value)">${data.decree67Analysis.socioemotional}</textarea></div>
-                <div class="mt-4 pt-4 border-t border-slate-200"><h4 class="text-sm font-bold text-slate-700 uppercase mb-1">Evidencias Adicionales</h4><textarea class="editable w-full h-24 bg-yellow-50 border-yellow-200" oninput="window.updateData('decree67Analysis.additionalEvidence', this.value)">${data.decree67Analysis.additionalEvidence}</textarea></div>
+                <div class="relative pl-4 border-l-4 border-blue-500">
+                    ${createCriteriaSelector('Sugerencias', 'progress', 'decree67Analysis.progress', 'sugg-progress')}
+                    ${window.createEditableBlock('Criterio A: Progreso', data.decree67Analysis.progress, 'decree67Analysis.progress')}
+                </div>
+                <div class="relative pl-4 border-l-4 border-blue-500">
+                    ${createCriteriaSelector('Sugerencias', 'gap', 'decree67Analysis.gap', 'sugg-gap')}
+                    <div class="bg-slate-50 p-2 rounded mt-2 mb-2" id="chart-container"></div>
+                    ${window.createEditableBlock('Criterio B: Brecha', data.decree67Analysis.gap, 'decree67Analysis.gap')}
+                </div>
+                <div class="relative pl-4 border-l-4 border-purple-500">
+                    ${createCriteriaSelector('Sugerencias', 'socioemotional', 'decree67Analysis.socioemotional', 'sugg-socio')}
+                    ${window.createEditableBlock('Criterio C: Socioemocional', data.decree67Analysis.socioemotional, 'decree67Analysis.socioemotional')}
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200">
+                    ${window.createEditableBlock('Evidencias Adicionales', data.decree67Analysis.additionalEvidence, 'decree67Analysis.additionalEvidence', 'h-24')}
+                </div>
             </div>`;
             document.getElementById('view-analisis').innerHTML = tableHTML + createSectionHTML("Asignaturas con Riesgo", "fa-solid fa-arrow-trend-down", asig) + createSectionHTML("Análisis Integral Art. 11", "fa-solid fa-chart-bar", ana);
             renderChartBars();
@@ -800,7 +796,21 @@
 
         function renderDecision() {
             const isRep = data.decision.status === 'Repitencia';
-            const html = `<div class="p-4 rounded-lg border-l-4 shadow-sm mb-4 ${isRep?'bg-red-50 border-red-500':'bg-green-50 border-green-500'}"><div class="flex items-center gap-3 mb-2"><h2 class="text-2xl font-bold">Decisión:</h2><select class="editable text-xl font-bold uppercase w-auto bg-white border-slate-300 rounded" onchange="window.updateData('decision.status', this.value); renderDecision()"><option value="Repitencia" ${isRep?'selected':''}>Repitencia</option><option value="Aprobación" ${!isRep?'selected':''}>Aprobación</option></select></div><label class="text-xs font-bold uppercase">Fundamentación:</label><textarea class="editable w-full h-24 italic bg-white" oninput="window.updateData('decision.justification', this.value)">${data.decision.justification}</textarea></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><h4 class="font-bold text-blue-800 mb-2">Compromisos Establecimiento</h4><textarea class="editable w-full h-48 bg-blue-50 border-blue-200 text-sm" oninput="window.updateData('plan2025.schoolCommitments', this.value)">${data.plan2025.schoolCommitments}</textarea></div><div><h4 class="font-bold text-purple-800 mb-2">Compromisos Familia</h4><textarea class="editable w-full h-48 bg-purple-50 border-purple-200 text-sm" oninput="window.updateData('plan2025.familyCommitments', this.value)">${data.plan2025.familyCommitments}</textarea></div></div><div class="mt-8 pt-8 border-t border-slate-300 grid grid-cols-2 gap-12 text-center"><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Profesor Jefe</p></div><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Alejandra Morales G.</p><p class="text-sm">Unidad Técnico Pedagógica</p></div></div>`;
+            const html = `<div class="p-4 rounded-lg border-l-4 shadow-sm mb-4 ${isRep?'bg-red-50 border-red-500':'bg-green-50 border-green-500'}">
+                <div class="flex items-center gap-3 mb-2"><h2 class="text-2xl font-bold">Decisión:</h2><select class="editable text-xl font-bold uppercase w-auto bg-white border-slate-300 rounded" onchange="window.updateData('decision.status', this.value); renderDecision()"><option value="Repitencia" ${isRep?'selected':''}>Repitencia</option><option value="Aprobación" ${!isRep?'selected':''}>Aprobación</option></select></div>
+                ${window.createEditableBlock('Fundamentación:', data.decision.justification, 'decision.justification', 'h-24 italic')}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-bold text-blue-800 mb-2">Compromisos Establecimiento</h4>
+                    ${window.createEditableBlock('', data.plan2025.schoolCommitments, 'plan2025.schoolCommitments', 'h-48')}
+                </div>
+                <div>
+                    <h4 class="font-bold text-purple-800 mb-2">Compromisos Familia</h4>
+                    ${window.createEditableBlock('', data.plan2025.familyCommitments, 'plan2025.familyCommitments', 'h-48')}
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-slate-300 grid grid-cols-2 gap-12 text-center"><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Profesor Jefe</p></div><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Alejandra Morales G.</p><p class="text-sm">Unidad Técnico Pedagógica</p></div></div>`;
             document.getElementById('view-decision').innerHTML = createSectionHTML("Plan de Acompañamiento", "fa-solid fa-file-contract", html);
         }
 
@@ -819,7 +829,7 @@
                     </div>
                 </div>`;
             const header = `<div class="print-header-flex border-b-2 border-slate-800 pb-4 mb-4"><div class="flex-shrink-0 w-24 h-24 flex items-center justify-center"><img id="print-logo-tutoria" src="${data.logoUrl||''}" class="print-logo w-full h-full object-contain ${data.logoUrl?'':'hidden'}"><div id="placeholder-logo-tut" class="text-xs text-slate-400 border-2 border-dashed p-1 rounded no-print ${data.logoUrl?'hidden':''}">Logo</div></div><div class="text-center flex-1"><h1 class="text-3xl font-bold">INFORME TUTORÍA</h1><p class="text-sm font-bold text-slate-500 mt-2">INFORMACIÓN PERSONAL</p></div><div class="text-right text-sm"><div class="flex justify-end items-center gap-2"><span class="font-bold">Nº:</span><input type="text" class="font-bold text-red-600 text-right transparent-input w-24" value="${data.tutoria.reportNumber}" oninput="window.updateData('tutoria.reportNumber', this.value)"></div></div></div>`;
-            const info = `<div class="grid grid-cols-[150px_1fr] gap-y-2 mb-6 text-sm">
+            const info = `<div class="grid grid-cols-[150px_1fr] gap-y-2 mb-8 text-sm border-b border-slate-200 pb-6 avoid-break">
                 <div class="font-bold">Tutor 1:</div><input type="text" class="editable border-b border-dotted p-0" value="${data.tutoria.tutor1}" oninput="window.updateData('tutoria.tutor1', this.value)">
                 <div class="font-bold">Tutor 2:</div><input type="text" class="editable border-b border-dotted p-0" value="${data.tutoria.tutor2}" oninput="window.updateData('tutoria.tutor2', this.value)">
                 <div class="font-bold mt-1">Estudiante:</div><input id="input-tut-name" type="text" class="editable border-b border-dotted p-0 font-medium" value="${data.student.name}" oninput="window.updateData('student.name', this.value)">
@@ -827,13 +837,25 @@
                 <div class="font-bold">Curso:</div><input id="input-tut-course" type="text" class="editable border-b border-dotted p-0 font-medium" value="${data.student.course}" oninput="window.updateData('student.course', this.value)">
                 <div class="font-bold">Fecha:</div><input type="date" class="editable border-b border-dotted p-0" value="${data.tutoria.reportDate}" oninput="window.updateData('tutoria.reportDate', this.value)">
             </div>`;
-            
-            const createSem = (n, d, p) => `<div class="mb-6"><h3 class="font-bold border-b border-slate-300 mb-2 pb-1 uppercase">Tutoría Semestre Nº ${n}</h3><div class="grid grid-cols-2 gap-4 mb-2"><div class="flex gap-2"><label class="font-bold text-sm">Inicio:</label><input class="editable w-32" value="${d.startMonth}" oninput="window.updateData('${p}.startMonth', this.value)"></div><div class="flex gap-2"><label class="font-bold text-sm">Fin:</label><input class="editable w-32" value="${d.endMonth}" oninput="window.updateData('${p}.endMonth', this.value)"></div></div><div class="space-y-3"><div><h4 class="font-bold text-xs uppercase">Situación</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.situation', this.value)">${d.situation}</textarea></div><div><h4 class="font-bold text-xs uppercase">Acuerdos</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.agreements', this.value)">${d.agreements}</textarea></div><div><h4 class="font-bold text-xs uppercase">Compromisos</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.commitments', this.value)">${d.commitments}</textarea></div><div><h4 class="font-bold text-xs uppercase">Observaciones</h4><textarea class="editable w-full h-16 text-justify text-sm" oninput="window.updateData('${p}.observations', this.value)">${d.observations}</textarea></div></div></div>`;
-            
+            const createSem = (n, d, p) => `
+                <div class="mb-8 print-spacer avoid-break">
+                    <h3 class="font-bold border-b-2 border-slate-800 mb-4 pb-1 uppercase text-lg bg-slate-100 px-2">Tutoría Semestre Nº ${n}</h3>
+                    <div class="grid grid-cols-2 gap-8 mb-6 bg-slate-50 p-3 rounded border border-slate-200 avoid-break">
+                        <div class="flex flex-col"><label class="font-bold text-xs uppercase text-slate-500">Mes Inicio</label><input class="editable font-medium" value="${d.startMonth}" oninput="window.updateData('${p}.startMonth', this.value)"></div>
+                        <div class="flex flex-col"><label class="font-bold text-xs uppercase text-slate-500">Mes Término</label><input class="editable font-medium" value="${d.endMonth}" oninput="window.updateData('${p}.endMonth', this.value)"></div>
+                    </div>
+                    <div class="space-y-6">
+                        ${window.createEditableBlock('Diagnóstico / Situación', d.situation, `${p}.situation`)}
+                        ${window.createEditableBlock('Acuerdos Tomados', d.agreements, `${p}.agreements`)}
+                        ${window.createEditableBlock('Compromisos (Estudiante/Familia)', d.commitments, `${p}.commitments`)}
+                        ${window.createEditableBlock('Observaciones Finales', d.observations, `${p}.observations`)}
+                    </div>
+                </div>`;
             const sem1 = data.tutoria.showSem1 ? createSem(1, data.tutoria.sem1, 'tutoria.sem1') : '';
             const sem2 = data.tutoria.showSem2 ? createSem(2, data.tutoria.sem2, 'tutoria.sem2') : '';
-            const signs = `<div class="mt-8 pt-8 border-t border-slate-300 grid grid-cols-2 gap-12 text-center"><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Firma Profesor Tutor</p></div><div><div class="h-10 border-b border-slate-400 mb-1"></div><p class="font-bold">Alejandra Morales G.</p><p class="text-sm">Unidad Técnico Pedagógica</p></div></div>`;
-            document.getElementById('view-tutoria').innerHTML = controls + `<div class="bg-white p-8 rounded-lg shadow-sm border border-slate-200 print:border-none print:shadow-none print:p-0">${header}${info}${sem1}${sem2}${signs}</div>`;
+            const signs = `<div class="mt-12 pt-8 border-t border-slate-300 grid grid-cols-2 gap-12 text-center avoid-break"><div class="mt-8"><div class="h-px bg-slate-400 mb-2 w-3/4 mx-auto"></div><p class="font-bold text-sm">Firma Profesor Tutor</p></div><div class="mt-8"><div class="h-px bg-slate-400 mb-2 w-3/4 mx-auto"></div><p class="font-bold text-sm">Alejandra Morales G.</p><p class="text-xs text-slate-500">Unidad Técnico Pedagógica</p></div></div>`;
+            document.getElementById('view-tutoria').innerHTML = controls + `<div class="bg-white p-10 rounded-lg shadow-sm border border-slate-200 print:border-none print:shadow-none print:p-0 max-w-[21cm] mx-auto">${header}${info}${sem1}${sem2}${signs}</div>`;
+            setTimeout(() => { document.querySelectorAll('#view-tutoria textarea.auto-grow').forEach(el => window.autoResize(el)); }, 50);
         }
 
         renderFicha(); renderAnalisis(); renderDecision(); renderTutoria();
